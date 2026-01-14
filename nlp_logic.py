@@ -1,0 +1,57 @@
+from textblob import TextBlob
+import re
+
+def analyze_text_smartly(text):
+    # --- 1. Machine Learning Sentiment Analysis (TextBlob) ---
+    blob = TextBlob(text)
+    sentiment = blob.sentiment.polarity # -1.0 to 1.0
+    
+    # Determine Tone Emoji based on ML Score
+    if sentiment > 0.3:
+        ai_emoji = "🎉" # Strong Positive
+    elif sentiment > 0:
+        ai_emoji = "😊" # Mild Positive
+    elif sentiment < -0.3:
+        ai_emoji = "🚨" # Strong Negative
+    elif sentiment < 0:
+        ai_emoji = "⚠️" # Mild Negative
+    else:
+        ai_emoji = "ℹ️" # Neutral
+
+    # --- 2. Category Detection (Hybrid: ML Noun Phrases + Rules) ---
+    # TextBlob can extract noun phrases, but for specific categories like "Sports",
+    # simple keyword matching is still often more robust for domain-specific tasks.
+    # We will keep the robust scoring system but enhance it with ML preprocessing if needed.
+    
+    categories_logic = {
+        'Academic': [r'\bexam\b', r'\btest\b', r'\bresult\b', r'\bgrade\b', r'\bclass\b', r'\blecture\b', r'\bassignment\b'],
+        'Holiday': [r'\bholiday\b', r'\bvacation\b', r'\bclosed\b', r'\beid\b', r'\bchristmas\b', r'\bbreak\b'],
+        'Events': [r'\bfest\b', r'\bparty\b', r'\bevent\b', r'\bceremony\b', r'\bworkshop\b', r'\bseminar\b'],
+        'Sports': [r'\bcricket\b', r'\bfootball\b', r'\bmatch\b', r'\bgame\b', r'\btournament\b', r'\bsport\b'],
+        'Administrative': [r'\bfee\b', r'\badmission\b', r'\bregister\b', r'\boffice\b', r'\bapplication\b'],
+        'Urgent': [r'\burgent\b', r'\bemergency\b', r'\balert\b', r'\bmandatory\b']
+    }
+
+    text_lower = text.lower()
+    scores = {cat: 0 for cat in categories_logic}
+    
+    for category, patterns in categories_logic.items():
+        for pattern in patterns:
+            if re.search(pattern, text_lower):
+                scores[category] += 1
+
+    active_scores = {k: v for k, v in scores.items() if v > 0}
+    
+    if not active_scores:
+        # Fallback: Use TextBlob's noun phrases to see if we can guess?
+        # For now, safe default.
+        found_category = "General Information"
+    else:
+        found_category = max(active_scores, key=active_scores.get)
+
+    # --- 3. Priority ---
+    priority = "Normal"
+    if scores['Urgent'] > 0 or "!" in text or text.isupper():
+        priority = "High Priority"
+
+    return found_category, priority, ai_emoji
