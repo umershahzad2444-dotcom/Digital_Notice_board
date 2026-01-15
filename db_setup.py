@@ -4,8 +4,7 @@ from database import get_db_connection
 SERVER_NAME = 'MALIKZADA\\AMINASHAHZAD'
 
 def create_database_if_not_exists():
-    print("--- 0. Checking Database Existence ---")
-    # Connect to 'master' to create the DB
+    # Silent check unless error or creation
     conn_str = (
         'DRIVER={ODBC Driver 17 for SQL Server};'
         f'SERVER={SERVER_NAME};'
@@ -16,9 +15,7 @@ def create_database_if_not_exists():
     try:
         conn = pyodbc.connect(conn_str, autocommit=True)
         cursor = conn.cursor()
-        
         cursor.execute("IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = 'NoticeBoardDB') CREATE DATABASE NoticeBoardDB")
-        print("[OK] Database 'NoticeBoardDB' checked/created.")
         conn.close()
     except Exception as e:
         print(f"[FAIL] Failed to create database: {e}")
@@ -26,19 +23,13 @@ def create_database_if_not_exists():
     return True
 
 def init_tables():
-    print("\n--- 1. Testing Connection to NoticeBoardDB ---")
     try:
-        # Now connect effectively using the function in database.py 
-        # (Assuming it points to NoticeBoardDB, which we just ensured exists)
         conn = get_db_connection()
-        print("[OK] Connection Successful!")
     except Exception as e:
         print(f"[FAIL] Connection FAILED: {e}")
         return
 
     cursor = conn.cursor()
-
-    print("\n--- 2. Checking/Creating Tables ---")
     
     # Table: Users
     try:
@@ -53,9 +44,8 @@ def init_tables():
             IsApproved BIT DEFAULT 0
         )
         """)
-        print("[OK] Table 'Users' checked/created.")
     except Exception as e:
-        print(f"[FAIL] Failed to check/create 'Users' table: {e}")
+        print(f"[FAIL] User Table Error: {e}")
 
     # Table: Notifications
     try:
@@ -70,25 +60,20 @@ def init_tables():
             CreatedAt DATETIME DEFAULT GETDATE()
         )
         """)
-        print("[OK] Table 'Notifications' checked/created.")
     except Exception as e:
-        print(f"[FAIL] Failed to check/create 'Notifications' table: {e}")
+        print(f"[FAIL] Notifications Table Error: {e}")
 
     # Create Default Admin
     try:
-         # Check if admin exists
         cursor.execute("SELECT * FROM Users WHERE Email = 'admin@gmail.com'")
         if not cursor.fetchone():
             cursor.execute("INSERT INTO Users (FullName, Email, Password, Role, IsApproved) VALUES ('Admin', 'admin@gmail.com', 'admin123', 'Admin', 1)")
-            print("[OK] Default Admin account created (admin@gmail.com / admin123).")
-        else:
-            print("[INFO] Admin account already exists.")
+            print("[INFO] Default Admin account created.")
     except Exception as e:
-         print(f"[FAIL] Failed to create admin: {e}")
+         print(f"[FAIL] Admin Creation Error: {e}")
 
     conn.commit()
     conn.close()
-    print("\n--- Database Setup Complete ---")
 
 if __name__ == "__main__":
     if create_database_if_not_exists():

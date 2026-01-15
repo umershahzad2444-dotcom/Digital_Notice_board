@@ -1,5 +1,15 @@
 from textblob import TextBlob
 import re
+import nltk
+
+# Ensure necessary NLTK corpora are downloaded
+try:
+    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('taggers/averaged_perceptron_tagger')
+except LookupError:
+    print("Downloading necessary NLTK corpora...")
+    nltk.download('punkt')
+    nltk.download('averaged_perceptron_tagger')
 
 def analyze_text_smartly(text):
     # --- 1. Machine Learning Sentiment Analysis (TextBlob) ---
