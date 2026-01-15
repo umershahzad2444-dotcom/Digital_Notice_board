@@ -34,12 +34,10 @@ def analyze_text_smartly(text):
     # We will keep the robust scoring system but enhance it with ML preprocessing if needed.
     
     categories_logic = {
-        'Academic': [r'\bexam\b', r'\btest\b', r'\bresult\b', r'\bgrade\b', r'\bclass\b', r'\blecture\b', r'\bassignment\b'],
-        'Holiday': [r'\bholiday\b', r'\bvacation\b', r'\bclosed\b', r'\beid\b', r'\bchristmas\b', r'\bbreak\b'],
-        'Events': [r'\bfest\b', r'\bparty\b', r'\bevent\b', r'\bceremony\b', r'\bworkshop\b', r'\bseminar\b'],
-        'Sports': [r'\bcricket\b', r'\bfootball\b', r'\bmatch\b', r'\bgame\b', r'\btournament\b', r'\bsport\b'],
-        'Administrative': [r'\bfee\b', r'\badmission\b', r'\bregister\b', r'\boffice\b', r'\bapplication\b'],
-        'Urgent': [r'\burgent\b', r'\bemergency\b', r'\balert\b', r'\bmandatory\b']
+        'Study': [r'\bexam\b', r'\btest\b', r'\bresult\b', r'\bgrade\b', r'\bclass\b', r'\blecture\b', r'\bassignment\b', r'\bstudy\b', r'\bcourse\b'],
+        'Sports': [r'\bcricket\b', r'\bfootball\b', r'\bmatch\b', r'\bgame\b', r'\btournament\b', r'\bsport\b', r'\bplayer\b', r'\bteam\b'],
+        'Events': [r'\bfest\b', r'\bparty\b', r'\bevent\b', r'\bceremony\b', r'\bworkshop\b', r'\bseminar\b', r'\bconference\b'],
+        'General': [r'\bnotice\b', r'\bimportant\b', r'\battention\b', r'\bannouncement\b', r'\boffice\b', r'\bfee\b', r'\badmission\b']
     }
 
     text_lower = text.lower()
@@ -53,9 +51,7 @@ def analyze_text_smartly(text):
     active_scores = {k: v for k, v in scores.items() if v > 0}
     
     if not active_scores:
-        # Fallback: Use TextBlob's noun phrases to see if we can guess?
-        # For now, safe default.
-        found_category = "General Information"
+        found_category = "General"
     else:
         found_category = max(active_scores, key=active_scores.get)
 

@@ -72,7 +72,7 @@
             <a href="/manage-students" class="nav-link-vibe">
                 <span>👥</span> Manage Students
             </a>
-            <a href="/notices?view_as=admin" class="nav-link-vibe" target="_blank">
+            <a href="/notices?view_as=admin" class="nav-link-vibe">
                 <span>🎓</span> Student View
             </a>
 
@@ -104,6 +104,24 @@
                             <input type="file" name="file" class="form-input-vibe" style="padding: 9px;">
                         </div>
                     </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="text-secondary mb-2">Category (Optional)</label>
+                            <select name="category" class="form-input-vibe">
+                                <option value="Auto">✨ Auto Detect (AI)</option>
+                                <option value="Study">📚 Study</option>
+                                <option value="Sports">⚽ Sports</option>
+                                <option value="Events">🎊 Events</option>
+                                <option value="General">ℹ️ General</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="text-secondary mb-2">Expiry Date (Optional)</label>
+                            <input type="datetime-local" name="expiry_date" class="form-input-vibe">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mb-4">
@@ -133,6 +151,10 @@
                     <a href="/view-attachment?file={{ n.attachment }}" class="btn btn-sm btn-outline-info"
                         style="border-radius: 20px;">📎</a>
                     {% endif %}
+                    <a href="/edit-notice/{{ n.id }}" class="btn btn-sm btn-outline-warning"
+                        style="border-radius: 20px; padding: 5px 15px;">
+                        ✏️ Edit
+                    </a>
                     <button onclick="confirmDelete('{{ n.id }}')" class="btn btn-sm btn-outline-danger"
                         style="border-radius: 20px; padding: 5px 15px;">
                         Delete

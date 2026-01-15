@@ -65,9 +65,9 @@ async def manage_notices(request: Request):
         conn = get_db_connection()
         cursor = conn.cursor()
         # SQL query for all notices
-        cursor.execute("SELECT id, Title, Content, Category, CreatedAt, Attachment FROM Notifications ORDER BY CreatedAt DESC")
+        cursor.execute("SELECT id, Title, Content, Category, CreatedAt, Attachment, ExpiryDate FROM Notifications ORDER BY CreatedAt DESC")
         rows = cursor.fetchall()
-        notices = [{"id": r[0], "title": r[1], "content": r[2], "category": r[3], "date": r[4], "attachment": r[5]} for r in rows]
+        notices = [{"id": r[0], "title": r[1], "content": r[2], "category": r[3], "date": r[4], "attachment": r[5], "expiry_date": r[6]} for r in rows]
         return templates.TemplateResponse("admin_dashboard.html", {"request": request, "notices": notices})
     except Exception as e:
         return HTMLResponse(f"<h3>Error loading dashboard: {e}</h3><a href='/'>Go Back</a>")
@@ -76,7 +76,7 @@ async def manage_notices(request: Request):
             conn.close()
 
 @app.post("/post-notice")
-async def post_notice(title: str = Form(...), content: str = Form(...), file: UploadFile = File(None)):
+async def post_notice(title: str = Form(...), content: str = Form(...), category: str = Form("Auto"), expiry_date: str = Form(None), file: UploadFile = File(None)):
     file_path = ""
     if file and file.filename:
         # Sanitize filename
@@ -92,8 +92,12 @@ async def post_notice(title: str = Form(...), content: str = Form(...), file: Up
         
         # NLP Integration (Error-Free Wrapper)
         try:
-            category, priority, ai_emoji = analyze_text_smartly(content)
+            ai_category, priority, ai_emoji = analyze_text_smartly(content)
             
+            # Use manual category if chosen, otherwise use AI category
+            if category == "Auto":
+                category = ai_category
+
             # Append AI Emoji to Title for Visual Feedback
             title = f"{ai_emoji} {title}"
             
@@ -102,11 +106,12 @@ async def post_notice(title: str = Form(...), content: str = Form(...), file: Up
                 title = f"[URGENT] {title}"
         except Exception as e:
             print(f"NLP Error (Ignored for Stability): {e}")
-            category = "General"  # Fallback
+            if category == "Auto":
+                category = "General"  # Fallback
             priority = "Normal"
 
-        cursor.execute("INSERT INTO Notifications (Title, Content, Category, Attachment) VALUES (?, ?, ?, ?)", 
-                       (title, content, category, file_path))
+        cursor.execute("INSERT INTO Notifications (Title, Content, Category, Attachment, ExpiryDate) VALUES (?, ?, ?, ?, ?)", 
+                       (title, content, category, file_path, expiry_date if expiry_date else None))
         conn.commit()
     except Exception as e:
         print(f"Error posting notice: {e}")
@@ -115,6 +120,48 @@ async def post_notice(title: str = Form(...), content: str = Form(...), file: Up
         if conn:
             conn.close()
             
+    return RedirectResponse(url="/manage-notices", status_code=303)
+
+@app.get("/edit-notice/{notice_id}", response_class=HTMLResponse)
+async def edit_notice_page(request: Request, notice_id: int):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, Title, Content, ExpiryDate FROM Notifications WHERE id = ?", (notice_id,))
+        row = cursor.fetchone()
+        if row:
+            # Format expiry date for datetime-local input (YYYY-MM-DDTHH:MM)
+            expiry_val = ""
+            if row[3]:
+                expiry_val = row[3].strftime('%Y-%m-%dT%H:%M')
+            cursor.execute("SELECT Category FROM Notifications WHERE id = ?", (notice_id,))
+            cat_row = cursor.fetchone()
+            category = cat_row[0] if cat_row else "General"
+            notice = {"id": row[0], "title": row[1], "content": row[2], "expiry_date": expiry_val, "category": category}
+            return templates.TemplateResponse("edit_notice.html", {"request": request, "notice": notice})
+        return RedirectResponse(url="/manage-notices", status_code=303)
+    except Exception as e:
+        print(f"Error loading edit page: {e}")
+        return RedirectResponse(url="/manage-notices", status_code=303)
+    finally:
+        if conn:
+            conn.close()
+
+@app.post("/update-notice/{notice_id}")
+async def update_notice(notice_id: int, title: str = Form(...), content: str = Form(...), category: str = Form(...), expiry_date: str = Form(None)):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE Notifications SET Title = ?, Content = ?, Category = ?, ExpiryDate = ? WHERE id = ?", 
+                       (title, content, category, expiry_date if expiry_date else None, notice_id))
+        conn.commit()
+    except Exception as e:
+        print(f"Error updating notice: {e}")
+    finally:
+        if conn:
+            conn.close()
     return RedirectResponse(url="/manage-notices", status_code=303)
 
 @app.get("/delete-notice/{notice_id}")
@@ -194,17 +241,34 @@ async def login_student(request: Request, email: str = Form(...), password: str 
             conn.close()
 
 @app.get("/notices", response_class=HTMLResponse)
-async def student_view(request: Request, view_as: str = None):
+async def student_view(request: Request, category: str = None, view_as: str = None):
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, Title, Content, Category, CreatedAt, Attachment FROM Notifications ORDER BY CreatedAt DESC")
+        query = """
+            SELECT id, Title, Content, Category, CreatedAt, Attachment 
+            FROM Notifications 
+            WHERE (ExpiryDate IS NULL OR ExpiryDate > GETDATE())
+        """
+        params = []
+        if category and category != "All":
+            query += " AND Category = ?"
+            params.append(category)
+        
+        query += " ORDER BY CreatedAt DESC"
+        
+        cursor.execute(query, params)
         rows = cursor.fetchall()
         notices = [{"id": r[0], "title": r[1], "content": r[2], "category": r[3], "date": r[4], "attachment": r[5]} for r in rows]
         
         is_admin = (view_as == "admin")
-        return templates.TemplateResponse("student_view.html", {"request": request, "notices": notices, "is_admin": is_admin})
+        return templates.TemplateResponse("student_view.html", {
+            "request": request, 
+            "notices": notices, 
+            "is_admin": is_admin,
+            "current_category": category or "All"
+        })
     except Exception as e:
         return HTMLResponse(f"<h3>Error loading notices: {e}</h3>")
     finally:

@@ -57,8 +57,14 @@ def init_tables():
             Content NVARCHAR(MAX),
             Category NVARCHAR(50),
             Attachment NVARCHAR(200),
+            ExpiryDate DATETIME NULL,
             CreatedAt DATETIME DEFAULT GETDATE()
         )
+        ELSE
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Notifications') AND name = 'ExpiryDate')
+            ALTER TABLE Notifications ADD ExpiryDate DATETIME NULL
+        END
         """)
     except Exception as e:
         print(f"[FAIL] Notifications Table Error: {e}")

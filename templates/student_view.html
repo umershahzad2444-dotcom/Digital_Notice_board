@@ -49,6 +49,12 @@
             background: linear-gradient(to bottom, rgba(0, 242, 255, 0.05), transparent);
             text-align: center;
         }
+
+        .active-cat {
+            border-color: var(--accent-primary) !important;
+            background: rgba(0, 242, 255, 0.1) !important;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2) !important;
+        }
     </style>
 </head>
 
@@ -70,16 +76,63 @@
 
     <div class="hero">
         <div class="container">
-            <h1 class="mb-3" style="font-size: 3rem;">Recent <span style="color: var(--accent-primary);">Updates</span>
+            <h1 class="mb-3" style="font-size: 3rem;">Student <span style="color: var(--accent-primary);">Panel</span>
             </h1>
             <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
-                Stay informed with the latest announcements, exam schedules, and academic news directly from the
-                administration.
+                Select a category below to explore specific updates and announcements.
             </p>
         </div>
     </div>
 
+    <!-- Category Selector Panel -->
+    <div class="container mb-5">
+        <div class="row g-3 justify-content-center">
+            <div class="col-6 col-md-2">
+                <a href="/notices?category=All{% if is_admin %}&view_as=admin{% endif %}"
+                    class="glass-card text-center d-block p-3 {% if current_category == 'All' %}active-cat{% endif %}"
+                    style="text-decoration: none;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">🏠</div>
+                    <div style="font-weight: bold; color: white;">All</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="/notices?category=Study{% if is_admin %}&view_as=admin{% endif %}"
+                    class="glass-card text-center d-block p-3 {% if current_category == 'Study' %}active-cat{% endif %}"
+                    style="text-decoration: none;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">📚</div>
+                    <div style="font-weight: bold; color: white;">Study</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="/notices?category=Sports{% if is_admin %}&view_as=admin{% endif %}"
+                    class="glass-card text-center d-block p-3 {% if current_category == 'Sports' %}active-cat{% endif %}"
+                    style="text-decoration: none;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">⚽</div>
+                    <div style="font-weight: bold; color: white;">Sports</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="/notices?category=Events{% if is_admin %}&view_as=admin{% endif %}"
+                    class="glass-card text-center d-block p-3 {% if current_category == 'Events' %}active-cat{% endif %}"
+                    style="text-decoration: none;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">🎊</div>
+                    <div style="font-weight: bold; color: white;">Events</div>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="/notices?category=General{% if is_admin %}&view_as=admin{% endif %}"
+                    class="glass-card text-center d-block p-3 {% if current_category == 'General' %}active-cat{% endif %}"
+                    style="text-decoration: none;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">ℹ️</div>
+                    <div style="font-weight: bold; color: white;">General</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="container pb-5">
+        <h4 class="mb-4 text-secondary">Showing: <span style="color: var(--accent-primary);">{{ current_category
+                }}</span> Notices</h4>
         <div class="row g-4">
             {% for n in notices %}
             <div class="col-md-10 mx-auto">
